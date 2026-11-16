@@ -1,0 +1,78 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String     @id @default(cuid())
+  name             String
+  email            String     @unique
+  password         String
+  role             String     @default("OPERATOR") // ADMIN, OPERATOR, VIEWER
+  avatar           String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model StaffMember {
+  id                 String     @id @default(cuid())
+  staffId            String     @unique // e.g. P6014, FTH-001
+  fullName           String
+  email              String?
+  phone              String?
+  designation        String     @default("Staff")
+  department         String     @default("General")
+  bloodGroup         String?
+  issueDate          DateTime   @default(now())
+  expiryDate         DateTime
+  status             String     @default("ACTIVE") // ACTIVE, EXPIRED, SUSPENDED, REVOKED
+  photoUrl           String?    // Base64 or URL
+  signatureUrl       String?    // Base64 or URL
+  qrVerificationCode String     @unique @default(cuid())
+  notes              String?
+  barcodeData        String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  auditLogs          AuditLog[]
+
+  @@map("staff_members")
+}
+
+model AuditLog {
+  id         String       @id @default(cuid())
+  action     String       // USER_LOGIN, STAFF_CREATED, STAFF_UPDATED, CARD_ISSUED, CARD_VERIFIED, CARD_REVOKED
+  details    String
+  ipAddress  String?
+  userId     String?
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  staffId    String?
+  staff      StaffMember? @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+
+  @@map("audit_logs")
+}
+
+model TemplateConfig {
+  id               String   @id @default(cuid())
+  name             String   @default("Federal Teaching Hospital, Ido-Ekiti Master")
+  organizationName String   @default("Federal Teaching Hospital, Ido-Ekiti")
+  primaryColor     String   @default("#036029")
+  secondaryColor   String   @default("#014e24")
+  accentColor      String   @default("#A7F3D0")
+  dimensionsJson   String   @default("{\"width_mm\":53.98,\"height_mm\":85.60,\"dpi\":300}")
+  layoutJson       String?
+  isDefault        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("template_configs")
+}
